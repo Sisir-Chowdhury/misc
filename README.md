@@ -1,2 +1,2 @@
 # misc
-Miscl Code
+miscellaneous code
