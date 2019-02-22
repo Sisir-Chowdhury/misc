@@ -6,16 +6,32 @@
 #define NUM_THREADS  1
 #define TCOUNT 20
 #define COUNT_LIMIT 0
+#define BUFF_LEN 50
 
 int     pkt_len = 0;
 int     thread_ids[1] = {0};
+char    buff[BUFF_LEN] = {0};
 pthread_mutex_t pkt_len_mutex;
 pthread_cond_t pkt_len_threshold_cv;
 
+void read_buff() {
+   int i = 0;
+   printf("DATA:");
+   for ( i = 0; i < BUFF_LEN; i++) {
+      printf("%c", buff[i]);
+   }
+   printf("\n");
+}
+void write_buff() {
+   int i = 0;
+   for ( i = 0; i < BUFF_LEN; i++) {
+      sprintf(buff+i, "%c", '1');
+   }
+}
 void *read_pkt(void *t) 
 {
    long my_id = (long)t;
-   int NUM_BYTE = 125;
+   int NUM_BYTE = BUFF_LEN;
 
    //printf("Starting read_pkt(): thread %ld\n", my_id);
 
@@ -31,10 +47,11 @@ void *read_pkt(void *t)
       //printf ("**** reader thread COUNT: %d\n", pkt_len);
       while (pkt_len==COUNT_LIMIT) {
         pthread_cond_wait(&pkt_len_threshold_cv, &pkt_len_mutex);
-        printf("read_pkt(): thread %ld Condition signal received.\n", my_id);
+        //printf("read_pkt(): thread %ld Condition signal received.\n", my_id);
       }
       pkt_len -= NUM_BYTE;
       printf("read_pkt(): thread %ld pkt_len now = %d. Read %d byte Data \n", my_id, pkt_len, NUM_BYTE);
+      read_buff();
       pthread_cond_signal(&pkt_len_threshold_cv);
       pthread_mutex_unlock(&pkt_len_mutex);
       //printf("read_pkt(): thread %ld unlocked Mutex \n", my_id);
@@ -60,9 +77,10 @@ void *mirror_pkt(void *t)
       //printf ("**** main thread COUNT: %d\n", pkt_len);
       while (pkt_len>COUNT_LIMIT) {
         pthread_cond_wait(&pkt_len_threshold_cv, &pkt_len_mutex);
-        printf("mirror_pkt(): thread %ld Condition signal received.\n", my_id);
+        //printf("mirror_pkt(): thread %ld Condition signal received.\n", my_id);
       }
-      pkt_len += 125;
+      write_buff();
+      pkt_len += BUFF_LEN;
       printf("mirror_pkt(): thread %ld pkt_len now = %d. Written %d byte Data \n", my_id, pkt_len, pkt_len);
       pthread_cond_signal(&pkt_len_threshold_cv);
       pthread_mutex_unlock(&pkt_len_mutex);
